@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Artemisia</title>
+<link rel="manifest" href="/static/manifest.json">
+<meta name="theme-color" content="#faf6ee">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Artemisia">
+<link rel="apple-touch-icon" href="/static/icon-180.png">
+<link rel="icon" type="image/png" href="/static/icon-192.png">
+<style>
+:root{
+  --cream:#faf6ee; --card:#fffdf8; --ink:#42403a; --faded:#938c7c;
+  --sage:#7d8f6d; --sage-deep:#5a6b4d; --fern:#e6eedd;
+  --blush:#e7b8ae; --rose:#c4756a; --rose-deep:#a85548;
+  --terracotta:#c98a5e; --border:#e9e0cd;
+  --f-spot:#f7e6e1; --f-light:#f2ccc3; --f-med:#e6a396;
+  --f-heavy:#d67f6f; --f-vheavy:#c05f4c;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--cream);color:var(--ink);
+  font:16px/1.55 "Iowan Old Style",Georgia,"Times New Roman",serif;}
+header{display:flex;align-items:baseline;gap:1.2rem;flex-wrap:wrap;
+  padding:1.3rem 2rem .9rem;border-bottom:1px solid var(--border);}
+header h1{font-size:1.65rem;font-weight:500;letter-spacing:.04em;margin:0;
+  color:var(--sage-deep);}
+header h1 .sprig{vertical-align:-4px;margin-right:.45rem}
+nav{margin-left:auto;display:flex;gap:1.4rem}
+nav a{color:var(--faded);text-decoration:none;font-style:italic}
+nav a:hover,nav a.here{color:var(--rose-deep)}
+main{max-width:1000px;margin:0 auto;padding:1.4rem 1.5rem 4rem}
+.card{background:var(--card);border:1px solid var(--border);border-radius:16px;
+  padding:1.2rem 1.4rem;margin-bottom:1.3rem;
+  box-shadow:0 1px 3px rgba(90,80,60,.06)}
+h2{font-weight:500;color:var(--sage-deep);font-size:1.2rem;margin:.2rem 0 .8rem}
+.muted{color:var(--faded);font-size:.9rem}
+button,.btn{font:inherit;border:1px solid var(--border);background:var(--card);
+  color:var(--ink);border-radius:10px;padding:.4rem 1rem;cursor:pointer}
+button:hover,.btn:hover{border-color:var(--sage)}
+.primary{background:var(--sage);border-color:var(--sage);color:#fff}
+.primary:hover{background:var(--sage-deep)}
+/* charts */
+svg{width:100%;height:auto;display:block}
+svg .grid{stroke:#eee5d2;stroke-width:1}
+svg .grid.v{stroke-dasharray:2 4}
+svg .tick,svg .count{font:12px Georgia,serif;fill:var(--faded)}
+svg .lbl{font:14px Georgia,serif;fill:var(--ink)}
+svg .line{fill:none;stroke:var(--sage);stroke-width:1.8}
+svg .pt{fill:var(--sage-deep)}
+svg .pt.outlier{fill:var(--terracotta)}
+svg .bar{fill:var(--blush)}
+svg .bar.alt{fill:#b7c6a4}
+@media (max-width:640px){
+  header{padding:.8rem 1rem .55rem;gap:.7rem}
+  header h1{font-size:1.3rem}
+  nav{gap:.9rem;font-size:.92rem}
+  main{padding:.9rem .55rem 3rem}
+  .card{padding:.9rem .9rem;border-radius:13px}
+  body{padding-bottom:env(safe-area-inset-bottom)}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1><span class="sprig"><svg width="22" height="24" viewBox="0 0 22 24" fill="none">
+    <path d="M11 23 C11 16 11 8 11 2" stroke="#7d8f6d" stroke-width="1.4" stroke-linecap="round"/>
+    <path d="M11 6 C8 5 6 3 5.5 1 C8 1.5 10 3 11 6z" fill="#9db38a"/>
+    <path d="M11 6 C14 5 16 3 16.5 1 C14 1.5 12 3 11 6z" fill="#7d8f6d"/>
+    <path d="M11 12 C8 11 5.5 9 5 6.5 C8 7 10 9 11 12z" fill="#7d8f6d"/>
+    <path d="M11 12 C14 11 16.5 9 17 6.5 C14 7 12 9 11 12z" fill="#9db38a"/>
+    <path d="M11 18 C8 17 5 15 4.5 12 C8 12.5 10 15 11 18z" fill="#9db38a"/>
+    <path d="M11 18 C14 17 17 15 17.5 12 C14 12.5 12 15 11 18z" fill="#7d8f6d"/>
+  </svg></span>Artemisia</h1>
+  <nav>
+    <a href="/" class="{{ 'here' if page=='calendar' }}">calendar</a>
+    <a href="/year/{{ now_year }}" class="{{ 'here' if page=='year' }}">year</a>
+    <a href="/insights" class="{{ 'here' if page=='insights' }}">insights</a>
+    <a href="/almanac" class="{{ 'here' if page=='almanac' }}">almanac</a>
+    <a href="/import" class="{{ 'here' if page=='import' }}">import</a>
+  </nav>
+</header>
+<div id="installbar" style="display:none;align-items:center;gap:1rem;justify-content:center;
+  padding:.55rem 1rem;background:#eef3e6;border-bottom:1px solid var(--border);font-style:italic">
+  <span>She can live on your home screen.</span>
+  <button class="primary" onclick="doInstall()">install artemisia</button>
+</div>
+<main>
+{% block content %}{% endblock %}
+</main>
+<script>
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  document.getElementById('installbar').style.display = 'flex';
+});
+async function doInstall() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt = null;
+  document.getElementById('installbar').style.display = 'none';
+}
+window.addEventListener('appinstalled', () => {
+  document.getElementById('installbar').style.display = 'none';
+});
+</script>
+</body>
+</html>

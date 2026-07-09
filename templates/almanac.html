@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% set page = 'almanac' %}
+{% block content %}
+<style>
+svg .ph-menstrual{fill:#f7e3de}
+svg .ph-follicular{fill:#f2eee2}
+svg .ph-ovulatory{fill:#e4ecdb}
+svg .ph-luteal{fill:#efe8dc}
+svg .h-oest{stroke:var(--sage-deep);stroke-width:2.2}
+svg .h-prog{stroke:var(--terracotta);stroke-width:2.2}
+svg .h-lh{stroke:var(--rose);stroke-width:1.8}
+svg .h-today{stroke:#42403a;stroke-width:1.4;stroke-dasharray:3 3}
+svg .band{fill:#dde5d2;opacity:.75}
+svg .petal{fill:var(--blush);stroke:var(--rose);stroke-width:1;opacity:.85}
+.compass{display:flex;gap:1.4rem;align-items:baseline;flex-wrap:wrap}
+.compass .big{font-size:2rem;color:var(--rose-deep)}
+.compass .poem{font-style:italic;color:var(--faded)}
+.keyline{display:flex;gap:1.4rem;flex-wrap:wrap;font-size:.85rem;color:var(--faded);margin-top:.4rem}
+.keyline b{font-weight:500}
+.caveat{background:#f6f1e4;border:1px solid var(--border);border-radius:12px;
+  padding:.7rem 1rem;font-size:.9rem;color:#6b6455;font-style:italic}
+</style>
+
+<h2 style="font-size:1.45rem">The Almanac</h2>
+<p class="caveat">Read as a careful scientist would: your cycle <b>start dates are gospel</b>
+and carry the deep inferences here. Period lengths are treated as lower bounds (trailing light
+days sometimes went unlogged), and the symptom analyses wear their small numbers openly —
+counts shown, intervals wide. Schematics are population-typical shapes, not measurements.</p>
+
+{% if compass %}
+<div class="card">
+<h2>The compass — where you stand today</h2>
+<div class="compass">
+  <span class="big">day {{ compass.day }}</span>
+  <span><strong>{{ compass.phase }}</strong> — <em>{{ compass.poem[0] }}</em></span>
+</div>
+<p class="poem" style="font-style:italic;color:var(--faded)">{{ compass.poem[1] }}.</p>
+{{ hormones|safe }}
+<div class="keyline">
+  <span><b style="color:var(--sage-deep)">—</b> oestradiol</span>
+  <span><b style="color:var(--terracotta)">—</b> progesterone</span>
+  <span><b style="color:var(--rose)">- -</b> LH</span>
+  <span>typical shapes scaled to your average cycle</span>
+</div>
+</div>
+{% endif %}
+
+{% if window %}
+<div class="card">
+<h2>The window — an honest forecast</h2>
+<p>Your next period is most likely around <strong>{{ window[2] }}</strong>, and
+80% of your recent cycles say it will arrive between
+<strong>{{ window[0] }}</strong> and <strong>{{ window[1] }}</strong>.
+A range is more truthful than a date — this one is computed from your own last
+two years of cycle lengths, not anyone else's.</p>
+</div>
+{% endif %}
+
+{% if ors %}
+<div class="card">
+<h2>Your own epidemiology</h2>
+<p class="muted">For each symptom and mood with enough logged days, the phase where it
+clusters most, as an odds ratio with a 95% confidence interval. The vertical line is 1×
+(no association) — where a whisker crosses it, your data cannot yet distinguish the
+pattern from chance. Rose = body, violet = mood.</p>
+{{ chart_forest|safe }}
+</div>
+{% endif %}
+
+{% if ray %}
+<div class="card">
+<h2>The moon question</h2>
+<div style="display:flex;gap:1.5rem;align-items:center;flex-wrap:wrap">
+  <div style="flex:0 0 300px">{{ chart_rose|safe }}</div>
+  <div style="flex:1;min-width:260px">
+  <p>Your {{ ray.n }} cycle starts, arranged around the lunar month.
+  The Rayleigh test asks: do they cluster at any phase of the moon?</p>
+  <p><strong>R = {{ '%.3f'|format(ray.r) }}</strong>, <strong>p = {{ '%.3f'|format(ray.p) }}</strong>.
+  {% if ray.p < 0.05 %}A detectable clustering, centred about day {{ '%.0f'|format(ray.mean_day) }}
+  of the lunar month — unusual, and worth savouring.{% else %}No significant clustering —
+  your tides and hers keep their own counsel, which is what the population studies find too.
+  There is something quietly dignified about a rhythm entirely one's own.{% endif %}</p>
+  </div>
+</div>
+</div>
+{% endif %}
+
+{% if chart_roll %}
+<div class="card">
+<h2>The changing weather</h2>
+<p class="muted">Rolling mean of your cycle length (line) wrapped in ±1 standard deviation
+(the shaded band), across six-cycle windows. Terracotta dots along the top mark
+≥7-day jumps between consecutive cycles — the marker used in the STRAW+10 staging of the
+menopausal transition, which announces itself in <em>variability</em> before anything else.
+A widening band, or dots gathering where they used to be scattered, is that weather forming —
+seen early, calmly, on your own instrument.</p>
+{{ chart_roll|safe }}
+{% if vsum.recent_mean %}
+<p class="muted">Latest window: mean {{ '%.1f'|format(vsum.recent_mean) }} days,
+SD {{ '%.1f'|format(vsum.recent_sd) }}. ≥7-day jumps in your last ten cycles:
+<strong>{{ vsum.recent_big }}</strong>
+(your early-years baseline rate was {{ '%.0f'|format(vsum.early_big_rate*100) }}%).</p>
+{% endif %}
+</div>
+{% endif %}
+
+{% if chart_seasonal %}
+<div class="card">
+<h2>The seasons</h2>
+<p class="muted">Mean cycle length by the month a cycle began. Hover the points for
+sample sizes — months are small samples even across a decade, so enjoy this one as
+weather-lore rather than climatology.</p>
+{{ chart_seasonal|safe }}
+</div>
+{% endif %}
+
+<p class="muted" style="font-style:italic">All of it computed at home, from your own
+data, for an audience of one.</p>
+{% endblock %}

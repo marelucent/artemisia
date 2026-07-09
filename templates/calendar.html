@@ -1,0 +1,229 @@
+{% extends "base.html" %}
+{% set page = 'calendar' %}
+{% block content %}
+<style>
+.calhead{display:flex;align-items:center;gap:1rem;margin-bottom:1rem}
+.calhead h2{font-size:1.45rem;margin:0}
+.calhead .nav{display:flex;gap:.4rem;margin-left:auto}
+.pred-line{color:var(--faded);font-style:italic;margin:.2rem 0 1rem}
+table.cal{width:100%;border-collapse:separate;border-spacing:5px;table-layout:fixed}
+table.cal th{font-weight:400;color:var(--faded);font-size:.82rem;padding-bottom:.3rem}
+td.day{background:var(--card);border:1px solid var(--border);border-radius:12px;
+  height:86px;vertical-align:top;padding:.35rem .5rem;cursor:pointer;position:relative;
+  transition:transform .06s}
+td.day:hover{transform:translateY(-2px);border-color:var(--sage)}
+td.day.dim{opacity:.38}
+td.day.today{outline:2px solid var(--sage-deep);outline-offset:-2px}
+td.day .num{font-size:.9rem}
+td.flow-spotting{background:var(--f-spot)}
+td.flow-light{background:var(--f-light)}
+td.flow-medium{background:var(--f-med)}
+td.flow-heavy{background:var(--f-heavy);color:#fff}
+td.flow-very.heavy,td.flow-vheavy{background:var(--f-vheavy);color:#fff}
+td.fertile{background:var(--fern)}
+td.predicted{border:1.6px dashed var(--rose)}
+td .ovu{position:absolute;top:.42rem;right:.5rem;width:9px;height:9px;border-radius:50%;
+  background:var(--sage-deep)}
+td .moon{font-size:.62rem;margin-left:.28rem;vertical-align:2px;opacity:.85}
+td .cyd{position:absolute;bottom:.4rem;right:.5rem;font-size:.68rem;font-style:italic;
+  color:var(--faded)}
+td .cyd.pred{opacity:.6}
+td.flow-heavy .cyd,td.flow-vheavy .cyd{color:#fff;opacity:.8}
+td .dots{position:absolute;bottom:.45rem;left:.5rem;display:flex;gap:4px}
+td .dots i{width:7px;height:7px;border-radius:50%;display:block}
+i.d-symptom{background:var(--terracotta)}
+i.d-mood{background:#8f7fae}
+i.d-note{background:var(--sage-deep)}
+i.d-extra{background:#c9b458}
+.legend{display:flex;flex-wrap:wrap;gap:1.1rem;margin-top:1rem;font-size:.84rem;color:var(--faded)}
+.legend span{display:flex;align-items:center;gap:.35rem}
+.legend .sw{width:14px;height:14px;border-radius:5px;border:1px solid var(--border);display:inline-block}
+/* modal */
+#veil{position:fixed;inset:0;background:rgba(60,50,40,.35);display:none;
+  align-items:flex-start;justify-content:center;padding:4vh 1rem;overflow:auto;z-index:9}
+#veil.open{display:flex}
+#panel{background:var(--card);border-radius:18px;max-width:560px;width:100%;
+  padding:1.4rem 1.6rem;border:1px solid var(--border)}
+#panel h3{margin:.1rem 0 1rem;font-weight:500;color:var(--sage-deep)}
+.grp{margin-bottom:.9rem}
+.grp .t{font-size:.8rem;letter-spacing:.08em;text-transform:uppercase;color:var(--faded);
+  margin-bottom:.35rem}
+.chips{display:flex;flex-wrap:wrap;gap:.4rem}
+.chip{border:1px solid var(--border);border-radius:999px;padding:.22rem .8rem;
+  cursor:pointer;font-size:.9rem;background:#fff;user-select:none}
+.chip.on{background:var(--sage);border-color:var(--sage);color:#fff}
+.chip.flowchip.on{background:var(--rose);border-color:var(--rose)}
+textarea{width:100%;font:inherit;border:1px solid var(--border);border-radius:10px;
+  padding:.5rem .7rem;min-height:70px;background:#fff;resize:vertical}
+.extras{font-size:.85rem;color:var(--faded);font-style:italic;margin-top:.6rem}
+.actions{display:flex;gap:.6rem;justify-content:flex-end;margin-top:1rem}
+@media (max-width:640px){
+  .calhead h2{font-size:1.15rem}
+  table.cal{border-spacing:2.5px}
+  table.cal th{font-size:.68rem}
+  td.day{height:56px;padding:.18rem .3rem;border-radius:8px}
+  td.day .num{font-size:.74rem}
+  td .dots{bottom:.28rem;left:.32rem;gap:3px}
+  td .dots i{width:5.5px;height:5.5px}
+  td .ovu{top:.28rem;right:.32rem;width:7px;height:7px}
+  .legend{gap:.7rem;font-size:.74rem}
+  #veil{padding:0}
+  #panel{max-width:none;min-height:100vh;border-radius:0;padding:1.1rem 1rem
+    calc(1.1rem + env(safe-area-inset-bottom))}
+  .chip{padding:.34rem .85rem;font-size:.95rem}
+  .actions button{padding:.55rem 1.3rem}
+}
+</style>
+
+<div class="calhead">
+  <h2>{{ month_name }} {{ year }}</h2>
+  <div class="nav">
+    <a class="btn" href="{{ url_for('calendar_view', year=prev[0], month=prev[1]) }}">‹</a>
+    <a class="btn" href="{{ url_for('home') }}">today</a>
+    <a class="btn" href="{{ url_for('calendar_view', year=next[0], month=next[1]) }}">›</a>
+    <a class="btn primary" href="#" onclick="openDay('{{ today }}');return false">＋ log today</a>
+  </div>
+</div>
+
+{% if pred %}
+<p class="pred-line">
+  {% if pred.cycle_day %}Day {{ pred.cycle_day }} of your cycle{% if pred.phase %}
+  ({{ pred.phase }}){% endif %}.{% endif %}
+  {% if pred.next_start %} Next period expected around
+  <strong>{{ pred.next_start.strftime('%A %d %B') }}</strong>{% if pred.window %},
+  80% window {{ pred.window[0].strftime('%d %b') }}–{{ pred.window[1].strftime('%d %b') }}{% endif %}.{% endif %}
+</p>
+{% else %}
+<p class="pred-line">Log a couple of cycles (or import your history) and predictions will bloom here.</p>
+{% endif %}
+
+<table class="cal">
+<tr><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th></tr>
+{% for wk in weeks %}
+<tr>
+  {% for c in wk %}
+  {% set cls = [] %}
+  {% if not c.in_month %}{% set _ = cls.append('dim') %}{% endif %}
+  {% if c.today %}{% set _ = cls.append('today') %}{% endif %}
+  {% if c.flow %}{% set _ = cls.append('flow-' + ('vheavy' if c.flow=='very heavy' else c.flow)) %}
+  {% elif c.fertile %}{% set _ = cls.append('fertile') %}{% endif %}
+  {% if c.predicted and not c.flow %}{% set _ = cls.append('predicted') %}{% endif %}
+  <td class="day {{ cls|join(' ') }}" onclick="openDay('{{ c.date }}')">
+    <span class="num">{{ c.day }}</span>{% if c.moon %}<span class="moon">{{ c.moon }}</span>{% endif %}
+    {% if c.ovulation %}<span class="ovu" title="estimated ovulation"></span>{% endif %}
+    {% if c.cd %}<span class="cyd{{ ' pred' if c.cd_pred }}" title="cycle day {{ c.cd }}">{{ c.cd }}</span>{% endif %}
+    {% if c.dots %}<span class="dots">{% for d in c.dots %}<i class="d-{{ d }}"></i>{% endfor %}</span>{% endif %}
+  </td>
+  {% endfor %}
+</tr>
+{% endfor %}
+</table>
+
+<div class="legend">
+  <span><span class="sw" style="background:var(--f-med)"></span> period</span>
+  <span><span class="sw" style="background:var(--f-spot)"></span> spotting</span>
+  <span><span class="sw" style="border:1.6px dashed var(--rose)"></span> predicted</span>
+  <span><span class="sw" style="background:var(--fern)"></span> fertile window (est.)</span>
+  <span><i class="d-symptom" style="width:9px;height:9px;border-radius:50%;display:inline-block"></i> symptoms</span>
+  <span><i class="d-mood" style="width:9px;height:9px;border-radius:50%;display:inline-block"></i> mood</span>
+  <span><i class="d-note" style="width:9px;height:9px;border-radius:50%;display:inline-block"></i> note</span>
+  <span><i class="d-extra" style="width:9px;height:9px;border-radius:50%;display:inline-block"></i> other</span>
+  <span>🌑🌓🌕🌗 moon phase begins</span>
+  <span><em style="color:var(--faded)">12</em> cycle day <em>(italic-faded = projected)</em></span>
+</div>
+<p class="muted" style="margin-top:.8rem">Fertile-window and ovulation marks are calendar estimates from your
+own averages — a compass, not a contraceptive.</p>
+
+<div id="veil" onclick="if(event.target===this)closePanel()">
+  <div id="panel">
+    <h3 id="p-date"></h3>
+    <div class="grp"><div class="t">Flow</div>
+      <div class="chips" id="g-flow">
+        {% for f in flows %}<span class="chip flowchip" data-v="{{ f }}">{{ f }}</span>{% endfor %}
+      </div></div>
+    <div class="grp"><div class="t">Symptoms</div>
+      <div class="chips" id="g-symptom">
+        {% for s in symptoms %}<span class="chip" data-v="{{ s }}">{{ s }}</span>{% endfor %}
+      </div></div>
+    <div class="grp"><div class="t">Mood</div>
+      <div class="chips" id="g-mood">
+        {% for m in moods %}<span class="chip" data-v="{{ m }}">{{ m }}</span>{% endfor %}
+      </div></div>
+    <div class="grp"><div class="t">Energy</div>
+      <div class="chips" id="g-energy">
+        {% for e in energies %}<span class="chip" data-v="{{ e }}">{{ e }}</span>{% endfor %}
+      </div></div>
+    <div class="grp"><div class="t">Discharge</div>
+      <div class="chips" id="g-discharge">
+        {% for d in discharges %}<span class="chip" data-v="{{ d }}">{{ d }}</span>{% endfor %}
+      </div></div>
+    <div class="grp"><div class="t">Note</div>
+      <textarea id="p-note" placeholder="anything the chips can't hold…"></textarea></div>
+    <div class="extras" id="p-extras"></div>
+    <div class="actions">
+      <button onclick="closePanel()">cancel</button>
+      <button class="primary" onclick="saveDay()">save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let curDate = null;
+const single = new Set(['flow','energy','discharge']);
+
+document.querySelectorAll('.chips').forEach(g => {
+  g.addEventListener('click', e => {
+    const chip = e.target.closest('.chip'); if (!chip) return;
+    const grp = g.id.slice(2);
+    if (single.has(grp)) {
+      const was = chip.classList.contains('on');
+      g.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+      if (!was) chip.classList.add('on');
+    } else chip.classList.toggle('on');
+  });
+});
+
+function setChips(grp, values) {
+  const set = new Set(Array.isArray(values) ? values : (values ? [values] : []));
+  document.querySelectorAll('#g-' + grp + ' .chip')
+    .forEach(c => c.classList.toggle('on', set.has(c.dataset.v)));
+}
+function getChips(grp) {
+  return [...document.querySelectorAll('#g-' + grp + ' .chip.on')].map(c => c.dataset.v);
+}
+
+async function openDay(iso) {
+  curDate = iso;
+  const r = await fetch('/api/day/' + iso);
+  const d = await r.json();
+  const dt = new Date(iso + 'T12:00:00');
+  document.getElementById('p-date').textContent =
+    dt.toLocaleDateString('en-GB', {weekday:'long', day:'numeric', month:'long', year:'numeric'});
+  setChips('flow', d.flow); setChips('symptom', d.symptoms);
+  setChips('mood', d.moods); setChips('energy', d.energy);
+  setChips('discharge', d.discharge);
+  document.getElementById('p-note').value = d.note || '';
+  const ex = document.getElementById('p-extras');
+  ex.textContent = d.extras.length
+    ? 'also logged: ' + d.extras.map(e => e.type + ' — ' + e.value).join(' · ') : '';
+  document.getElementById('veil').classList.add('open');
+}
+function closePanel() { document.getElementById('veil').classList.remove('open'); }
+
+async function saveDay() {
+  const body = {
+    flow: getChips('flow')[0] || null,
+    symptoms: getChips('symptom'),
+    moods: getChips('mood'),
+    energy: getChips('energy')[0] || null,
+    discharge: getChips('discharge')[0] || null,
+    note: document.getElementById('p-note').value
+  };
+  await fetch('/api/day/' + curDate, {method:'POST',
+    headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+  location.replace(location.pathname);
+}
+
+if (new URLSearchParams(location.search).get('log') === 'today') openDay('{{ today }}');
+</script>
+{% endblock %}

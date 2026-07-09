@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% set page = 'insights' %}
+{% block content %}
+<style>
+.stats{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:.8rem;margin-bottom:1.4rem}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:.8rem 1rem}
+.stat .v{font-size:1.5rem;color:var(--rose-deep)}
+.stat .k{font-size:.8rem;color:var(--faded);letter-spacing:.05em}
+</style>
+
+<h2>A decade, seen whole</h2>
+<div class="stats">
+  <div class="stat"><div class="v">{{ stats.n_cycles }}</div><div class="k">cycles tracked</div></div>
+  <div class="stat"><div class="v">{{ stats.span }}</div><div class="k">data span</div></div>
+  {% if stats.avg %}<div class="stat"><div class="v">{{ stats.avg }} days</div>
+    <div class="k">recent average (last {{ stats.n_recent }})</div></div>{% endif %}
+  {% if stats.median %}<div class="stat"><div class="v">{{ stats.median }} days</div><div class="k">median, all time</div></div>{% endif %}
+  {% if stats.shortest %}<div class="stat"><div class="v">{{ stats.shortest }}–{{ stats.longest }}</div><div class="k">shortest–longest</div></div>{% endif %}
+  {% if stats.period_len %}<div class="stat"><div class="v">{{ stats.period_len }} days</div><div class="k">average period</div></div>{% endif %}
+  {% if stats.cycle_day %}<div class="stat"><div class="v">day {{ stats.cycle_day }}</div><div class="k">of current cycle</div></div>{% endif %}
+  <div class="stat"><div class="v">{{ stats.total }}</div><div class="k">entries kept safe</div></div>
+</div>
+{% if stats.next_start %}<p class="muted" style="margin-top:-.6rem">Next period expected around <strong>{{ stats.next_start }}</strong>.</p>{% endif %}
+
+{% if chart_lengths %}
+<div class="card"><h2>Cycle length over the years</h2>
+<p class="muted">Each point is one cycle. Terracotta points fall outside the 15–60 day range,
+or were excluded, and don't shape your averages.</p>
+{{ chart_lengths|safe }}</div>
+{% endif %}
+
+{% if chart_hist %}
+<div class="card"><h2>How your cycle lengths gather</h2>
+{{ chart_hist|safe }}</div>
+{% endif %}
+
+{% if chart_sym %}
+<div class="card"><h2>Symptoms, most spoken</h2>
+{{ chart_sym|safe }}</div>
+{% endif %}
+
+{% if chart_mood %}
+<div class="card"><h2>Moods, most visited</h2>
+{{ chart_mood|safe }}</div>
+{% endif %}
+
+{% if not chart_lengths %}
+<div class="card"><p class="muted">Nothing to show yet — log some days or import your Clue history.</p></div>
+{% endif %}
+
+<div class="card"><h2>Keep her safe</h2>
+<p class="muted">Your decade, always in your own hands. The CSV opens anywhere;
+the database file is a complete backup you can restore by simply putting it back.</p>
+<p style="display:flex;gap:.8rem;flex-wrap:wrap">
+  <a class="btn" href="/export/csv">download CSV</a>
+  <a class="btn" href="/export/db">download database</a>
+</p></div>
+{% endblock %}

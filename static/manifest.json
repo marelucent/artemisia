@@ -1,0 +1,25 @@
+{
+  "id": "artemisia-cycle-tracker",
+  "name": "Artemisia",
+  "short_name": "Artemisia",
+  "description": "A private cycle tracker",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#faf6ee",
+  "theme_color": "#faf6ee",
+  "icons": [
+    {"src": "/static/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any"},
+    {"src": "/static/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any"},
+    {"src": "/static/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable"},
+    {"src": "/static/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ],
+  "shortcuts": [
+    {
+      "name": "Log today",
+      "short_name": "Log",
+      "url": "/?log=today",
+      "icons": [{"src": "/static/icon-192.png", "sizes": "192x192", "type": "image/png"}]
+    }
+  ]
+}

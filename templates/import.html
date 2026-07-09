@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% set page = 'import' %}
+{% block content %}
+<div class="card">
+<h2>Import from Clue</h2>
+<p>Upload the <code>measurements.json</code> from your Clue data download.
+Importing is additive and safe to repeat — days you've already recorded are never duplicated.</p>
+<form method="post" enctype="multipart/form-data" style="display:flex;gap:.8rem;align-items:center;flex-wrap:wrap">
+  <input type="file" name="file" accept=".json,application/json">
+  <button class="primary" type="submit">import</button>
+</form>
+<p class="muted" style="margin-top:.8rem">Tip: from the command line you can also run
+<code>python3 app.py import /path/to/ClueDataDownload-folder</code> — pointing at the whole
+folder also picks up <code>cycle_attributes.json</code> (cycle notes and exclusions).</p>
+
+{% if error %}<p style="color:var(--rose-deep)">{{ error }}</p>{% endif %}
+{% if result %}
+<h2 style="margin-top:1.2rem">Welcomed home</h2>
+<p>{{ result.total }} entries imported{% if result.skipped %} ({{ result.skipped }} undated entries skipped){% endif %}:</p>
+<ul>
+{% for t, c in result.counts.items() %}<li>{{ t }} — {{ c }}</li>{% endfor %}
+</ul>
+{% endif %}
+</div>
+{% endblock %}
