@@ -34,22 +34,70 @@ about owning it are hers. If you'd rather grow your own than run this one, see
 - **Installable phone app (PWA)** — with HTTPS, installs on Android/iOS with
   its own icon, standalone window, and a long-press "Log today" shortcut.
 
-## Quickstart
+## Getting her running — assuming nothing
 
-Requires Python 3.9+ and Flask. On any Mac, Linux box, Windows machine, or
-Raspberry Pi:
+Never used GitHub, Python, or a terminal? This section is for you. Ten
+minutes, no prior knowledge. (Already comfortable? The short version:
+Python 3.9+, `pip install -r requirements.txt`, `python3 app.py`,
+visit http://localhost:5876.)
+
+### Step 1 — Download her
+
+At the top of this page, find the green **Code** button → **Download ZIP**.
+Unzip it (right-click → Extract All on Windows; double-click on a Mac) and
+move the `artemisia-main` folder somewhere permanent that gets backed up —
+your Documents folder is perfect. Your cycle data will live inside this
+folder, so don't leave it in Downloads where future-you might tidy it away.
+
+### Step 2 — Install Python (the language she speaks)
+
+- **Windows**: get the installer from [python.org/downloads](https://www.python.org/downloads/).
+  When it opens, **tick the box that says "Add python.exe to PATH"** before
+  clicking Install — this is the single most important click in this guide.
+- **Mac**: open the Terminal app (⌘-space, type "terminal"), type
+  `python3 --version` and press Enter. If macOS offers to install
+  "command line developer tools", say yes — that *is* the Python install.
+- **Linux / Raspberry Pi**: you almost certainly have it. `python3 --version`
+  to confirm.
+
+### Step 3 — Open a terminal *in her folder*
+
+- **Windows**: open the `artemisia-main` folder in File Explorer, click in
+  the address bar at the top, type `cmd` and press Enter. A black window
+  appears, already standing in the right place.
+- **Mac**: right-click the `artemisia-main` folder → Services →
+  **New Terminal at Folder** (or drag the folder onto the Terminal icon).
+
+### Step 4 — Two spells, once ever
+
+In that terminal window, run (type it, press Enter, let it finish):
 
 ```bash
-pip install -r requirements.txt
+python3 -m pip install -r requirements.txt
+```
+
+(On Windows, if `python3` isn't recognised, use `py` instead: `py -m pip install -r requirements.txt`.)
+
+### Step 5 — Wake her
+
+```bash
 python3 app.py
 ```
 
-Visit **http://localhost:5876**. That's it — the database file
-(`artemisia.db`) appears next to `app.py`.
+(Windows: `py app.py`.) You'll see *Artemisia unfurling at
+http://127.0.0.1:5876*. Open your web browser and visit
+**http://localhost:5876** — there she is. Log something. She's yours.
 
-Environment knobs: `ARTEMISIA_DB` (database path), `ARTEMISIA_HOST`
-(default `127.0.0.1`; set `0.0.0.0` to allow other devices on a trusted
-network), `ARTEMISIA_PORT` (default `5876`).
+Notes for the road: the terminal window must stay open while she runs
+(Ctrl+C stops her; running the Step 5 command again wakes her). Your data
+lives in a single file, `artemisia.db`, which appears in her folder after
+first run — that file *is* your history, so let your backups include it.
+To start her automatically and keep her running quietly, see
+"Run at startup" below.
+
+Environment knobs for the curious: `ARTEMISIA_DB` (database path),
+`ARTEMISIA_HOST` (default `127.0.0.1`; set `0.0.0.0` to allow other devices
+on a trusted network), `ARTEMISIA_PORT` (default `5876`).
 
 ## Getting your data out of Clue
 
