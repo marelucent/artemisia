@@ -1,0 +1,13 @@
+[Unit]
+Description=Artemisia — private cycle tracker
+After=network.target
+
+[Service]
+Type=simple
+User=YOURUSER
+WorkingDirectory=/home/YOURUSER/apps/artemisia
+ExecStart=/usr/bin/python3 /home/YOURUSER/apps/artemisia/app.py
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
