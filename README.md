@@ -5,8 +5,10 @@ the moon-herb of Artemis. Your data lives in one SQLite file on your own
 computer. No accounts, no cloud, no ads, no subscription, no one monetising
 your luteal phase.
 
-Built in an afternoon with an AI assistant, by someone who is a researcher,
-not a developer. If you'd rather grow your own than run this one, see
+Built in an afternoon by Catherine — a researcher, not a developer — with
+**Claude** as gardener's assistant: the code, the moon maths, and the odds
+ratios are his handiwork; the decade of data, the taste, and the stubbornness
+about owning it are hers. If you'd rather grow your own than run this one, see
 [PROMPT.md](PROMPT.md) for a copy-paste prompt to give any capable AI assistant.
 
 ## What she does
