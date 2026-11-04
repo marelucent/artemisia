@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% set page = 'year' %}
+{% block content %}
+<style>
+.yearhead{display:flex;align-items:center;gap:1rem;margin-bottom:1.1rem}
+.yearhead h2{font-size:1.45rem;margin:0}
+.yearhead .nav{display:flex;gap:.4rem;margin-left:auto}
+.ygrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:1rem}
+.mini{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:.7rem .8rem}
+.mini h3{margin:.1rem 0 .5rem;font-weight:500;font-size:.95rem;color:var(--sage-deep)}
+.mini h3 a{color:inherit;text-decoration:none}
+.mini table{border-collapse:separate;border-spacing:2px;width:100%}
+.mini td{width:14.2%;aspect-ratio:1;border-radius:4px;background:#f4efe4;position:relative}
+.mini td.empty{background:transparent}
+.mini td.f-spotting{background:var(--f-spot)}
+.mini td.f-light{background:var(--f-light)}
+.mini td.f-medium{background:var(--f-med)}
+.mini td.f-heavy{background:var(--f-heavy)}
+.mini td.f-vheavy{background:var(--f-vheavy)}
+.mini td.predicted{background:#fff;border:1.3px dashed var(--rose)}
+.mini td.today{outline:2px solid var(--sage-deep);outline-offset:-1px}
+@media (max-width:640px){.ygrid{grid-template-columns:repeat(2,1fr);gap:.55rem}
+  .mini{padding:.45rem .5rem}.mini h3{font-size:.8rem}}
+</style>
+
+<div class="yearhead">
+  <h2>{{ year }}, seen whole</h2>
+  <div class="nav">
+    <a class="btn" href="{{ url_for('year_view', year=year-1) }}">‹</a>
+    <a class="btn" href="{{ url_for('year_view', year=year+1) }}">›</a>
+  </div>
+</div>
+
+<div class="ygrid">
+{% for m in months %}
+  <div class="mini">
+    <h3><a href="{{ url_for('calendar_view', year=year, month=m.n) }}">{{ m.name }}</a></h3>
+    <table>
+    {% for wk in m.weeks %}
+      <tr>
+      {% for c in wk %}
+        {% if c is none %}<td class="empty"></td>
+        {% else %}
+        {% set cls = [] %}
+        {% if c.flow %}{% set _ = cls.append('f-' + ('vheavy' if c.flow=='very heavy' else c.flow)) %}{% endif %}
+        {% if c.predicted %}{% set _ = cls.append('predicted') %}{% endif %}
+        {% if c.today %}{% set _ = cls.append('today') %}{% endif %}
+        <td class="{{ cls|join(' ') }}" title="{{ m.name }} {{ c.day }}{% if c.flow %} — {{ c.flow }}{% endif %}"></td>
+        {% endif %}
+      {% endfor %}
+      </tr>
+    {% endfor %}
+    </table>
+  </div>
+{% endfor %}
+</div>
+<p class="muted" style="margin-top:1rem">Rose squares are bleeding days by intensity; dashed outlines are
+predicted periods. Tap a month's name to open it.</p>
+{% endblock %}
