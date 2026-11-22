@@ -214,6 +214,10 @@ own averages — a compass, not a contraceptive.</p>
       <div class="chips" id="m-symptom" data-grp="symptom">
         {% for v in chips.symptom %}<span class="chip" data-v="{{ v }}">{{ v }}</span>{% endfor %}<span class="chip add">＋ your own</span>
       </div></div>
+    <div class="grp"><div class="t">Digestion</div>
+      <div class="chips" id="m-digestion" data-grp="digestion">
+        {% for v in chips.digestion %}<span class="chip" data-v="{{ v }}">{{ v }}</span>{% endfor %}<span class="chip add">＋ your own</span>
+      </div></div>
     <div class="grp"><div class="t">Pain · where</div>
       <div class="chips" id="m-pain_where" data-grp="pain_where">
         {% for v in chips.pain_where %}<span class="chip" data-v="{{ v }}">{{ v }}</span>{% endfor %}<span class="chip add">＋ your own</span>
@@ -351,7 +355,7 @@ async function addOwn(box) {
 
 // ---- moments
 const MGROUPS = ['mood', 'mood_score', 'symptom', 'pain_where', 'pain_kind',
-                 'pain_strength', 'painkiller', 'craving'];
+                 'pain_strength', 'painkiller', 'craving', 'digestion'];
 let curMoment = null, curMomentDay = null, tearCount = 0;
 const pad = n => String(n).padStart(2, '0');
 function localNow() {
@@ -436,6 +440,7 @@ function describe(m) {
       .filter(Boolean).join(' · ') + (by.pain_strength ? ' ' + by.pain_strength[0] + '/5' : ''));
   } else if (by.pain_strength) parts.push('pain ' + by.pain_strength[0] + '/5');
   if (by.tears) parts.push('tears \u00d7' + by.tears[0]);
+  if (by.digestion) parts.push(by.digestion.join(', '));
   if (by.painkiller) parts.push(by.painkiller.join(', '));
   if (by.craving) parts.push('craving ' + by.craving.join(', '));
   if (m.note) parts.push('\u201c' + m.note + '\u201d');

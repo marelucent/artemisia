@@ -50,10 +50,13 @@ PAINKILLERS = ["ibuprofen 200 mg", "ibuprofen 400 mg", "paracetamol 500 mg",
                "paracetamol 1 g", "naproxen 250 mg", "mefenamic acid 500 mg",
                "co-codamol", "aspirin 300 mg"]   # common UK doses; add your own
 CRAVINGS = ["chocolate", "sweet", "salty", "carbs", "savoury / meat"]
+DIGESTION = ["constipated", "loose", "urgent", "gassy", "pressing down",
+             "period poos"]
 CHIP_GROUPS = {"mood": MOODS, "symptom": SYMPTOMS, "pain_where": PAIN_WHERE,
                "pain_kind": PAIN_KINDS, "painkiller": PAINKILLERS,
-               "craving": CRAVINGS}
-MOMENT_TO_DAY = {"mood": "mood", "symptom": "symptom", "craving": "craving"}
+               "craving": CRAVINGS, "digestion": DIGESTION}
+MOMENT_TO_DAY = {"mood": "mood", "symptom": "symptom", "craving": "craving",
+                 "digestion": "digestion"}
 SCALE_TYPES = ("mood_score", "pain_strength")   # 1-5
 
 # stats guard-rails: cycle lengths outside this range are shown but not
