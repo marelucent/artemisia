@@ -86,11 +86,50 @@ def t_recent_log(days=14):
     rows = conn.execute(
         "SELECT date, type, value FROM entries WHERE date >= ? "
         "ORDER BY date DESC, type", (since,)).fetchall()
+    moments = _moments_since(conn, since)
     conn.close()
     out = {}
     for r in rows:
         out.setdefault(r["date"], []).append({"type": r["type"], "value": r["value"]})
-    return {"since": since, "days_with_entries": len(out), "log": out}
+    return {"since": since, "days_with_entries": len(out), "log": out,
+            "moments": moments}
+
+
+def _moments_since(conn, since):
+    """Timed moments from `since` on, grouped by date. Empty on an older
+    database that has no moments table yet."""
+    out = {}
+    try:
+        ms = conn.execute("SELECT id, at, date, note FROM moments WHERE date >= ? "
+                          "ORDER BY at, id", (since,)).fetchall()
+    except sqlite3.OperationalError:
+        return out
+    for m in ms:
+        rec = {"time": m["at"][11:16]}
+        for i in conn.execute("SELECT type, value FROM moment_items WHERE moment_id=? "
+                              "ORDER BY rowid", (m["id"],)):
+            rec.setdefault(i["type"], []).append(i["value"])
+        if m["note"]:
+            rec["note"] = m["note"]
+        out.setdefault(m["date"], []).append(rec)
+    return out
+
+
+MOMENTS_KEY = ("Each moment is what was logged at that time of day. mood_score and "
+               "pain_strength are 1-5 (mood 1 low, 5 good); tears is a count of "
+               "crying spells; the other fields are chips (mood, symptom, pain_where, "
+               "pain_kind, painkiller, craving, digestion).")
+
+
+def t_moments(days=7):
+    """Timed moments over the last N days."""
+    days = max(1, min(int(days), 120))
+    since = (dt.date.today() - dt.timedelta(days=days)).isoformat()
+    conn = ro_conn()
+    m = _moments_since(conn, since)
+    conn.close()
+    return {"since": since, "count": sum(len(v) for v in m.values()),
+            "moments_by_day": m, "key": MOMENTS_KEY}
 
 
 def t_cycle_history(n=12):
@@ -133,10 +172,19 @@ TOOLS = {
     "recent_log": {
         "fn": lambda a: t_recent_log(a.get("days", 14)),
         "description": ("Recent diary entries (flow, symptoms, mood, energy, "
-                        "sleep, notes...) grouped by date. days: 1-120, "
+                        "sleep, notes...) grouped by date, plus that window's "
+                        "timed moments. days: 1-120, "
                         "default 14."),
         "schema": {"type": "object", "properties": {
             "days": {"type": "integer", "description": "lookback window, default 14"}}},
+    },
+    "moments": {
+        "fn": lambda a: t_moments(a.get("days", 7)),
+        "description": ("Timed moments: what was felt, where it hurt, tears, "
+                        "painkillers, cravings and digestion, each at its time "
+                        "of day, grouped by date. days: 1-120, default 7."),
+        "schema": {"type": "object", "properties": {
+            "days": {"type": "integer", "description": "lookback window, default 7"}}},
     },
     "cycle_history": {
         "fn": lambda a: t_cycle_history(a.get("n", 12)),

@@ -175,8 +175,8 @@ MIT — see [LICENSE](LICENSE). Take her, rename her, make her yours.
 speaks MCP) ask Artemisia where you are in your cycle, what you've logged
 recently, your cycle history and how often each symptom or mood turns up.
 It opens the database read-only and has no writing tools: logging still
-happens in Artemisia herself. For now it reads the day sheets, not
-moments; teaching it the timeline is next on the list.
+happens in Artemisia herself. It reads the day sheets and, with the `moments` tool, the
+timed moments too.
 
 Run it beside `app.py` and expose it privately with Tailscale, as described
 at the top of the file. Set up this way, Artemisia fully replaces a hosted
