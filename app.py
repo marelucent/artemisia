@@ -35,11 +35,26 @@ FLOWS = ["spotting", "light", "medium", "heavy", "very heavy"]
 PERIOD_FLOWS = {"light", "medium", "heavy", "very heavy"}  # spotting ≠ period
 SYMPTOMS = ["cramps", "headache", "backache", "tender breasts", "bloating",
             "nausea", "acne", "fatigue", "dizziness", "ovulation pain"]
-MOODS = ["happy", "calm", "sensitive", "sad", "irritable", "anxious",
-         "stressed", "unmotivated", "not in control", "dreamy"]
+MOODS = ["happy", "calm", "sensitive", "sad", "irritable", "angry", "anxious",
+         "stressed", "unmotivated", "not in control", "dreamy", "tearful",
+         "raw", "inward", "porous"]
 ENERGIES = ["exhausted", "tired", "ok", "energetic"]
 DISCHARGES = ["dry", "sticky", "creamy", "egg white", "watery"]
 EDITABLE = ("flow", "symptom", "mood", "energy", "discharge", "note")
+
+# moments: timed entries within a day (see "chips & moments" below)
+PAIN_WHERE = ["womb", "lower back", "thighs", "knees", "hip crease", "head",
+              "breasts"]
+PAIN_KINDS = ["cramp", "ache", "needles", "heaviness", "sharp", "pulling down"]
+PAINKILLERS = ["ibuprofen 200 mg", "ibuprofen 400 mg", "paracetamol 500 mg",
+               "paracetamol 1 g", "naproxen 250 mg", "mefenamic acid 500 mg",
+               "co-codamol", "aspirin 300 mg"]   # common UK doses; add your own
+CRAVINGS = ["chocolate", "sweet", "salty", "carbs", "savoury / meat"]
+CHIP_GROUPS = {"mood": MOODS, "symptom": SYMPTOMS, "pain_where": PAIN_WHERE,
+               "pain_kind": PAIN_KINDS, "painkiller": PAINKILLERS,
+               "craving": CRAVINGS}
+MOMENT_TO_DAY = {"mood": "mood", "symptom": "symptom", "craving": "craving"}
+SCALE_TYPES = ("mood_score", "pain_strength")   # 1-5
 
 # stats guard-rails: cycle lengths outside this range are shown but not
 # used for averages/predictions
@@ -90,6 +105,27 @@ def init_db(conn):
         action TEXT NOT NULL         -- 'added' or 'removed'
     );
     CREATE INDEX IF NOT EXISTS idx_journal_date ON journal(date);
+    CREATE TABLE IF NOT EXISTS moments (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        at   TEXT NOT NULL,          -- local time it happened, YYYY-MM-DDTHH:MM
+        date TEXT NOT NULL,          -- the day it belongs to
+        note TEXT NOT NULL DEFAULT '',
+        logged_at TEXT NOT NULL      -- when it was saved
+    );
+    CREATE INDEX IF NOT EXISTS idx_moments_date ON moments(date);
+    CREATE TABLE IF NOT EXISTS moment_items (
+        moment_id INTEGER NOT NULL,
+        type  TEXT NOT NULL,
+        value TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_moment_items ON moment_items(moment_id);
+    CREATE TABLE IF NOT EXISTS custom_chips (
+        grp   TEXT NOT NULL,
+        value TEXT NOT NULL,
+        retired INTEGER NOT NULL DEFAULT 0,
+        added TEXT NOT NULL,
+        PRIMARY KEY (grp, value)
+    );
     CREATE TABLE IF NOT EXISTS excluded_cycles (
         date TEXT PRIMARY KEY        -- cycle start dates excluded from stats
     );
@@ -263,6 +299,9 @@ def month_payload(year, month):
             info["note"] = True
         else:
             info["extra"] = True
+    moment_days = {r["date"] for r in conn.execute(
+        "SELECT DISTINCT date FROM moments WHERE date BETWEEN ? AND ?",
+        (first.isoformat(), last.isoformat()))}
     pred = predictions(db())
     starts = cycle_data(db())["starts"]
     all_starts = sorted(set(starts) | set(pred["pred_starts"] if pred else []))
@@ -308,6 +347,8 @@ def month_payload(year, month):
                     cell["dots"].append("note")
                 if info["extra"]:
                     cell["dots"].append("extra")
+            if iso in moment_days:
+                cell["dots"].append("moment")
             row.append(cell)
         weeks.append(row)
     return weeks, pred
@@ -324,7 +365,7 @@ def home():
     t = date.today()
     target = url_for("calendar_view", year=t.year, month=t.month)
     if request.args.get("log"):
-        target += "?log=today"
+        target += "?log=" + ("moment" if request.args.get("log") == "moment" else "today")
     return redirect(target)
 
 
@@ -333,6 +374,7 @@ def calendar_view(year, month):
     if not (1 <= month <= 12):
         return redirect(url_for("home"))
     weeks, pred = month_payload(year, month)
+    chips = chip_lists(db())
     prev_m = (date(year, month, 1) - timedelta(days=1))
     next_m = (date(year, month, callib.monthrange(year, month)[1]) + timedelta(days=1))
     return render_template("calendar.html",
@@ -341,7 +383,7 @@ def calendar_view(year, month):
                            weeks=weeks, pred=pred,
                            prev=(prev_m.year, prev_m.month),
                            next=(next_m.year, next_m.month),
-                           flows=FLOWS, symptoms=SYMPTOMS, moods=MOODS,
+                           flows=FLOWS, symptoms=chips["symptom"], moods=chips["mood"], chips=chips,
                            energies=ENERGIES, discharges=DISCHARGES,
                            today=date.today().isoformat())
 
@@ -427,6 +469,7 @@ def get_day(iso):
         else:
             out["extras"].append({"type": t, "value": v})
     out["note"] = " · ".join(notes)
+    out["moments"] = moments_on(db(), iso)
     return jsonify(out)
 
 
@@ -472,6 +515,149 @@ def save_day(iso):
                      " VALUES(?,?,?,?,?)", (stamp, iso, t, v, "removed"))
     conn.commit()
     return jsonify({"ok": True})
+
+
+# ---------------------------------------------------------------- chips & moments
+# A moment is a timed entry: what you felt, where it hurt, tears, painkillers,
+# cravings, at a particular time. It lives in its own tables, so the day sheet,
+# the cycle maths and anything else reading `entries` carry on untouched.
+# Saving a moment also ticks the matching chip on its day (mood, symptom,
+# craving), so the almanac keeps counting everything.
+
+def _now():
+    return datetime.now().isoformat(timespec="seconds")
+
+
+def chip_lists(conn):
+    """Default chips plus your own, per group (retired ones hidden)."""
+    out = {g: list(v) for g, v in CHIP_GROUPS.items()}
+    for r in conn.execute(
+            "SELECT grp, value FROM custom_chips WHERE retired=0 ORDER BY added"):
+        if r["grp"] in out and r["value"] not in out[r["grp"]]:
+            out[r["grp"]].append(r["value"])
+    return out
+
+
+@app.route("/api/chips", methods=["POST"])
+def add_chip():
+    data = request.get_json(force=True)
+    grp = data.get("grp")
+    value = " ".join(str(data.get("value") or "").split())[:40].lower()
+    if grp not in CHIP_GROUPS or not value:
+        return jsonify({"ok": False, "error": "need a group and a word"}), 400
+    conn = db()
+    conn.execute("INSERT INTO custom_chips(grp,value,retired,added) VALUES(?,?,0,?) "
+                 "ON CONFLICT(grp,value) DO UPDATE SET retired=0",
+                 (grp, value, _now()))
+    conn.commit()
+    return jsonify({"ok": True, "value": value})
+
+
+@app.route("/api/chips/retire", methods=["POST"])
+def retire_chip():
+    """Hide one of your own chips from now on. Past entries keep it."""
+    data = request.get_json(force=True)
+    conn = db()
+    conn.execute("UPDATE custom_chips SET retired=1 WHERE grp=? AND value=?",
+                 (data.get("grp"), data.get("value")))
+    conn.commit()
+    return jsonify({"ok": True})
+
+
+def _clean_items(raw):
+    items = set()
+    for it in raw or []:
+        if not isinstance(it, dict):
+            continue
+        t, v = str(it.get("type", "")), str(it.get("value", "")).strip()[:60]
+        if not v:
+            continue
+        if t in CHIP_GROUPS:
+            items.add((t, v))
+        elif t in SCALE_TYPES and v in ("1", "2", "3", "4", "5"):
+            items.add((t, v))
+        elif t == "tears" and v.isdigit() and 0 < int(v) <= 30:
+            items.add((t, str(int(v))))
+    return sorted(items)
+
+
+def _tick_day(conn, iso, items, stamp):
+    for t, v in items:
+        day_t = MOMENT_TO_DAY.get(t)
+        if not day_t:
+            continue
+        cur = conn.execute("INSERT OR IGNORE INTO entries(date,type,value) VALUES(?,?,?)",
+                           (iso, day_t, v))
+        if cur.rowcount:
+            conn.execute("INSERT INTO journal(logged_at,date,type,value,action)"
+                         " VALUES(?,?,?,?,?)", (stamp, iso, day_t, v, "added"))
+
+
+def _save_moment(conn, mid, data):
+    """Insert (mid=None) or replace a moment. Raises ValueError on a bad time;
+    returns None if there is nothing to save."""
+    at = datetime.fromisoformat(str(data.get("at") or "")[:16]).strftime("%Y-%m-%dT%H:%M")
+    iso = at[:10]
+    items = _clean_items(data.get("items"))
+    note = (data.get("note") or "").strip()[:2000]
+    if not items and not note:
+        return None
+    stamp = _now()
+    if mid is None:
+        mid = conn.execute("INSERT INTO moments(at,date,note,logged_at) VALUES(?,?,?,?)",
+                           (at, iso, note, stamp)).lastrowid
+    else:
+        conn.execute("UPDATE moments SET at=?, date=?, note=? WHERE id=?",
+                     (at, iso, note, mid))
+        conn.execute("DELETE FROM moment_items WHERE moment_id=?", (mid,))
+    conn.executemany("INSERT INTO moment_items(moment_id,type,value) VALUES(?,?,?)",
+                     [(mid, t, v) for t, v in items])
+    _tick_day(conn, iso, items, stamp)
+    conn.commit()
+    return mid
+
+
+def moments_on(conn, iso):
+    out = []
+    for m in conn.execute("SELECT id, at, note FROM moments WHERE date=? ORDER BY at, id",
+                          (iso,)).fetchall():
+        items = conn.execute("SELECT type, value FROM moment_items WHERE moment_id=? "
+                             "ORDER BY rowid", (m["id"],)).fetchall()
+        out.append({"id": m["id"], "at": m["at"], "time": m["at"][11:16],
+                    "note": m["note"],
+                    "items": [{"type": i["type"], "value": i["value"]} for i in items]})
+    return out
+
+
+@app.route("/api/moment", methods=["POST"])
+def new_moment():
+    try:
+        mid = _save_moment(db(), None, request.get_json(force=True))
+    except ValueError:
+        return jsonify({"ok": False, "error": "that time doesn't look right"}), 400
+    if mid is None:
+        return jsonify({"ok": False, "error": "nothing to save"}), 400
+    return jsonify({"ok": True, "id": mid})
+
+
+@app.route("/api/moment/<int:mid>", methods=["PUT", "DELETE"])
+def edit_moment(mid):
+    conn = db()
+    if not conn.execute("SELECT 1 FROM moments WHERE id=?", (mid,)).fetchone():
+        return jsonify({"ok": False, "error": "no such moment"}), 404
+    if request.method == "DELETE":
+        # the day chips it ticked stay: they're part of the day now
+        conn.execute("DELETE FROM moment_items WHERE moment_id=?", (mid,))
+        conn.execute("DELETE FROM moments WHERE id=?", (mid,))
+        conn.commit()
+        return jsonify({"ok": True})
+    try:
+        ok = _save_moment(conn, mid, request.get_json(force=True))
+    except ValueError:
+        return jsonify({"ok": False, "error": "that time doesn't look right"}), 400
+    if ok is None:
+        return jsonify({"ok": False, "error": "nothing to save"}), 400
+    return jsonify({"ok": True, "id": mid})
 
 
 # ---------------------------------------------------------------- insights
