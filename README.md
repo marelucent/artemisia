@@ -22,7 +22,9 @@ about owning it are hers. If you'd rather grow your own than run this one, see
   **＋ moment** to log what's happening *now* (or earlier: the time is
   editable): mood, a 1–5 mood score, body symptoms, digestion, where it
   hurts, what kind of pain and how strong, tears, painkillers (common UK
-  doses) and cravings. Each moment keeps its own time, and every day shows
+  doses), cravings, and the bleeding itself: colour, texture, clots, and
+  where it went ("mostly in the toilet" is a real answer: flow isn't always
+  measurable in pads). Each moment keeps its own time, and every day shows
   its moments as a small timeline. A moment also ticks the matching chip on
   its day, so insights and the almanac keep counting everything.
 - **Your own words** — every chip group ends with **＋ your own**. The

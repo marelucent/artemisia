@@ -238,6 +238,24 @@ own averages — a compass, not a contraceptive.</p>
       </div></div>
     <div class="grp"><div class="t">Tears</div>
       <div class="tears"><button onclick="tears(-1)">−</button><span id="m-tears">0</span><button onclick="tears(1)">＋</button></div></div>
+    <details class="grp" data-g="bleed_colour bleed_texture clots bleed_where"><summary class="t">Bleeding</summary>
+      <div class="t" style="margin-top:.4rem">Colour</div>
+      <div class="chips" id="m-bleed_colour" data-grp="bleed_colour">
+        {% for v in chips.bleed_colour %}<span class="chip" data-v="{{ v }}">{{ v }}</span>{% endfor %}<span class="chip add">＋ your own</span>
+      </div>
+      <div class="t" style="margin-top:.4rem">Texture</div>
+      <div class="chips" id="m-bleed_texture" data-grp="bleed_texture">
+        {% for v in chips.bleed_texture %}<span class="chip" data-v="{{ v }}">{{ v }}</span>{% endfor %}<span class="chip add">＋ your own</span>
+      </div>
+      <div class="t" style="margin-top:.4rem">Clots</div>
+      <div class="chips" id="m-clots" data-grp="clots">
+        {% for v in chips.clots %}<span class="chip" data-v="{{ v }}">{{ v }}</span>{% endfor %}<span class="chip add">＋ your own</span>
+      </div>
+      <div class="t" style="margin-top:.4rem">Where it went</div>
+      <div class="chips" id="m-bleed_where" data-grp="bleed_where">
+        {% for v in chips.bleed_where %}<span class="chip" data-v="{{ v }}">{{ v }}</span>{% endfor %}<span class="chip add">＋ your own</span>
+      </div>
+    </details>
     <details class="grp" data-g="painkiller"><summary class="t">Painkillers</summary>
       <div class="chips" id="m-painkiller" data-grp="painkiller">
         {% for v in chips.painkiller %}<span class="chip" data-v="{{ v }}">{{ v }}</span>{% endfor %}<span class="chip add">＋ your own</span>
@@ -362,7 +380,8 @@ async function addOwn(box) {
 
 // ---- moments
 const MGROUPS = ['mood', 'mood_score', 'symptom', 'pain_where', 'pain_kind',
-                 'pain_strength', 'painkiller', 'craving', 'digestion'];
+                 'pain_strength', 'painkiller', 'craving', 'digestion',
+                 'bleed_colour', 'bleed_texture', 'clots', 'bleed_where'];
 let curMoment = null, curMomentDay = null, tearCount = 0;
 const pad = n => String(n).padStart(2, '0');
 function localNow() {
@@ -399,7 +418,8 @@ function openMoment(m, dayIso) {
   document.getElementById('m-at').value = at;
   document.getElementById('m-note').value = m ? m.note : '';
   document.getElementById('m-del').style.display = m ? '' : 'none';
-  document.querySelectorAll('#mpanel details').forEach(d => d.open = !!by[d.dataset.g]);
+  document.querySelectorAll('#mpanel details').forEach(d =>
+    d.open = d.dataset.g.split(' ').some(g => !!by[g]));
   document.getElementById('mveil').classList.add('open');
 }
 function closeMoment() { document.getElementById('mveil').classList.remove('open'); }
@@ -448,6 +468,9 @@ function describe(m) {
       .filter(Boolean).join(' · ') + (by.pain_strength ? ' ' + by.pain_strength[0] + '/5' : ''));
   } else if (by.pain_strength) parts.push('pain ' + by.pain_strength[0] + '/5');
   if (by.tears) parts.push('tears \u00d7' + by.tears[0]);
+  const bleed = [].concat(by.bleed_colour || [], by.bleed_texture || [],
+                          by.clots || [], by.bleed_where || []);
+  if (bleed.length) parts.push('blood: ' + bleed.join(', '));
   if (by.digestion) parts.push(by.digestion.join(', '));
   if (by.painkiller) parts.push(by.painkiller.join(', '));
   if (by.craving) parts.push('craving ' + by.craving.join(', '));
@@ -473,7 +496,9 @@ function renderMoments(ms) {
   box.append(add);
 }
 const LABELS = {mood: 'mood', symptom: 'body', pain_where: 'pain where', pain_kind: 'pain kind',
-                painkiller: 'painkiller', craving: 'craving', digestion: 'digestion'};
+                painkiller: 'painkiller', craving: 'craving', digestion: 'digestion',
+                bleed_colour: 'blood colour', bleed_texture: 'blood texture',
+                clots: 'clots', bleed_where: 'where it went'};
 async function quietToday(el) {
   try {
     const r = await fetch('/nudges?act=pause');

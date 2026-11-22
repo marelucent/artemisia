@@ -52,9 +52,18 @@ PAINKILLERS = ["ibuprofen 200 mg", "ibuprofen 400 mg", "paracetamol 500 mg",
 CRAVINGS = ["chocolate", "sweet", "salty", "carbs", "savoury / meat"]
 DIGESTION = ["constipated", "loose", "urgent", "gassy", "pressing down",
              "period poos"]
+# bleeding detail: flow chips stay the day's overall picture; these say what
+# the blood was like and where it went (much of it may never reach a product)
+BLEED_COLOUR = ["pink", "bright red", "dark red", "brown", "near-black"]
+BLEED_TEXTURE = ["watery", "thin", "thick", "stringy"]
+CLOTS = ["small clots", "clots bigger than a 10p"]
+BLEED_WHERE = ["mostly in the toilet", "gush on standing",
+               "gush when bearing down", "leaked through", "flooding"]
 CHIP_GROUPS = {"mood": MOODS, "symptom": SYMPTOMS, "pain_where": PAIN_WHERE,
                "pain_kind": PAIN_KINDS, "painkiller": PAINKILLERS,
-               "craving": CRAVINGS, "digestion": DIGESTION}
+               "craving": CRAVINGS, "digestion": DIGESTION,
+               "bleed_colour": BLEED_COLOUR, "bleed_texture": BLEED_TEXTURE,
+               "clots": CLOTS, "bleed_where": BLEED_WHERE}
 MOMENT_TO_DAY = {"mood": "mood", "symptom": "symptom", "craving": "craving",
                  "digestion": "digestion"}
 SCALE_TYPES = ("mood_score", "pain_strength")   # 1-5

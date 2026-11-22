@@ -118,7 +118,8 @@ def _moments_since(conn, since):
 MOMENTS_KEY = ("Each moment is what was logged at that time of day. mood_score and "
                "pain_strength are 1-5 (mood 1 low, 5 good); tears is a count of "
                "crying spells; the other fields are chips (mood, symptom, pain_where, "
-               "pain_kind, painkiller, craving, digestion).")
+               "pain_kind, painkiller, craving, digestion, and bleeding detail: "
+               "bleed_colour, bleed_texture, clots, bleed_where).")
 
 
 def t_moments(days=7):
