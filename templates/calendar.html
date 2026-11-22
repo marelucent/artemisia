@@ -78,6 +78,9 @@ details.grp .chips{margin-top:.35rem}
   border-bottom:1px dotted var(--border)}
 .tl .mo b{font-weight:500;color:var(--sage-deep);min-width:3rem}
 .tl button{margin-top:.5rem}
+.own{font-size:.85rem;margin:-.2rem 0 .6rem}
+.ownrow{display:flex;justify-content:space-between;align-items:center;gap:.6rem;padding:.25rem 0;border-bottom:1px dotted var(--border)}
+.ownrow button{padding:.15rem .7rem;font-size:.8rem}
 @media (max-width:640px){
   .calhead h2{font-size:1.15rem}
   .calhead{flex-wrap:wrap;gap:.6rem}
@@ -242,6 +245,7 @@ own averages — a compass, not a contraceptive.</p>
       </div></details>
     <div class="grp"><div class="t">Note</div>
       <textarea id="m-note" placeholder="anything the chips can't hold…"></textarea></div>
+    <div class="own"><a href="#" onclick="manageOwn();return false">tidy my own words</a><div id="m-own"></div></div>
     <div class="actions">
       <button id="m-del" onclick="deleteMoment()" style="margin-right:auto;display:none">delete</button>
       <button onclick="closeMoment()">cancel</button>
@@ -382,6 +386,7 @@ function byType(items) {
 }
 function openMoment(m, dayIso) {
   curMoment = m ? m.id : null;
+  const own = document.getElementById('m-own'); own.innerHTML = ''; own.dataset.open = '';
   const by = byType(m ? m.items : []);
   MGROUPS.forEach(g => mSet(g, by[g] || []));
   tearCount = by.tears ? parseInt(by.tears[0], 10) : 0; tears(0);
@@ -463,6 +468,34 @@ function renderMoments(ms) {
   const add = document.createElement('button');
   add.textContent = '\uff0b moment'; add.onclick = () => openMoment(null, curDate);
   box.append(add);
+}
+const LABELS = {mood: 'mood', symptom: 'body', pain_where: 'pain where', pain_kind: 'pain kind',
+                painkiller: 'painkiller', craving: 'craving', digestion: 'digestion'};
+async function manageOwn() {
+  const box = document.getElementById('m-own');
+  if (box.dataset.open) { box.innerHTML = ''; box.dataset.open = ''; return; }
+  box.dataset.open = '1'; box.innerHTML = '';
+  let list = [];
+  try { list = await (await fetch('/api/chips')).json(); }
+  catch (err) { box.textContent = 'Could not reach the server.'; return; }
+  if (!list.length) { box.textContent = 'No words of your own yet: tap \uff0b your own to add one.'; return; }
+  list.forEach(c => {
+    const row = document.createElement('div'); row.className = 'ownrow';
+    const s = document.createElement('span'); s.textContent = (LABELS[c.grp] || c.grp) + ' \u00b7 ' + c.value;
+    const b = document.createElement('button'); b.textContent = 'retire';
+    b.onclick = async () => {
+      if (!confirm('Stop showing \u201c' + c.value + '\u201d? Past entries keep it.')) return;
+      try {
+        await fetch('/api/chips/retire', {method: 'POST',
+          headers: {'Content-Type': 'application/json'}, body: JSON.stringify(c)});
+      } catch (err) { alert('Could not reach the server.'); return; }
+      row.remove();
+      document.querySelectorAll('.chips[data-grp="' + c.grp + '"] .chip').forEach(ch => {
+        if (ch.dataset.v === c.value && !ch.classList.contains('on')) ch.remove();
+      });
+    };
+    row.append(s, b); box.append(row);
+  });
 }
 if (new URLSearchParams(location.search).get('log') === 'moment') openMoment();
 </script>

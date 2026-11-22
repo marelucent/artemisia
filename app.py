@@ -444,6 +444,23 @@ def export_db():
     return send_file(DB_PATH, as_attachment=True, download_name="artemisia.db")
 
 
+@app.route("/export/moments.csv")
+def export_moments_csv():
+    """Every moment, one row per item (a note-only moment gets one row)."""
+    conn = db()
+    buf = io.StringIO()
+    w = csv.writer(buf)
+    w.writerow(["time", "date", "type", "value", "note"])
+    for m in conn.execute("SELECT id, at, date, note FROM moments ORDER BY at, id").fetchall():
+        items = conn.execute("SELECT type, value FROM moment_items WHERE moment_id=? "
+                             "ORDER BY rowid", (m["id"],)).fetchall()
+        for i in items or [{"type": "", "value": ""}]:
+            w.writerow([m["at"].replace("T", " "), m["date"], i["type"], i["value"], m["note"]])
+    return Response(buf.getvalue(), mimetype="text/csv", headers={
+        "Content-Disposition":
+        f"attachment; filename=artemisia-moments-{date.today().isoformat()}.csv"})
+
+
 # ---------------------------------------------------------------- day API
 @app.route("/api/day/<iso>", methods=["GET"])
 def get_day(iso):
@@ -554,6 +571,13 @@ def add_chip():
                  (grp, value, _now()))
     conn.commit()
     return jsonify({"ok": True, "value": value})
+
+
+@app.route("/api/chips", methods=["GET"])
+def list_own_chips():
+    rows = db().execute("SELECT grp, value FROM custom_chips WHERE retired=0 "
+                        "ORDER BY grp, added").fetchall()
+    return jsonify([{"grp": r["grp"], "value": r["value"]} for r in rows])
 
 
 @app.route("/api/chips/retire", methods=["POST"])

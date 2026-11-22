@@ -18,6 +18,17 @@ about owning it are hers. If you'd rather grow your own than run this one, see
 - **Honest predictions** — next period as an 80% window computed from *your*
   history ("likely between the 28th and the 2nd"), not a false-confident date.
   Fertile window and ovulation estimates, clearly labelled as estimates.
+- **Moments** — a day is long, and bodies and moods shift within it. Tap
+  **＋ moment** to log what's happening *now* (or earlier: the time is
+  editable): mood, a 1–5 mood score, body symptoms, digestion, where it
+  hurts, what kind of pain and how strong, tears, painkillers (common UK
+  doses) and cravings. Each moment keeps its own time, and every day shows
+  its moments as a small timeline. A moment also ticks the matching chip on
+  its day, so insights and the almanac keep counting everything.
+- **Your own words** — every chip group ends with **＋ your own**. The
+  words you keep reaching for in the notes box ("phantom drip", "womb
+  sense", "bristling") become chips you can tap next time. Retire one
+  whenever you like from *tidy my own words*; past entries keep it.
 - **Year view** — twelve months at a glance; a decade becomes visible.
 - **Insights** — cycle length over the years, distribution, symptom and mood
   frequencies.
@@ -30,7 +41,8 @@ about owning it are hers. If you'd rather grow your own than run this one, see
 - **Clue import** — swallows a Clue GDPR export whole (`measurements.json` +
   `cycle_attributes.json`). Additive and idempotent; nothing in your history
   is lost — even data types the app doesn't edit are preserved and displayed.
-- **Backup & export** — download everything as CSV or the SQLite file itself.
+- **Backup & export** — download everything as CSV (the day sheets and the moments,
+  separately) or the SQLite file itself.
 - **Installable phone app (PWA)** — with HTTPS, installs on Android/iOS with
   its own icon, standalone window, and a long-press "Log today" shortcut.
 
@@ -99,6 +111,14 @@ Environment knobs for the curious: `ARTEMISIA_DB` (database path),
 `ARTEMISIA_HOST` (default `127.0.0.1`; set `0.0.0.0` to allow other devices
 on a trusted network), `ARTEMISIA_PORT` (default `5876`).
 
+## Updating from an earlier version
+
+1. Stop Artemisia and copy `artemisia.db` somewhere safe.
+2. Replace the program files with the new ones, leaving `artemisia.db`
+   where it is.
+3. Start her again. Anything new (moments, your own chips) gets its own
+   tables on first start; nothing already in your database is changed.
+
 ## Getting your data out of Clue
 
 1. Clue app → ☰ → **Settings** → **Download my data** → **Request data**
@@ -155,7 +175,8 @@ MIT — see [LICENSE](LICENSE). Take her, rename her, make her yours.
 speaks MCP) ask Artemisia where you are in your cycle, what you've logged
 recently, your cycle history and how often each symptom or mood turns up.
 It opens the database read-only and has no writing tools: logging still
-happens in Artemisia herself.
+happens in Artemisia herself. For now it reads the day sheets, not
+moments; teaching it the timeline is next on the list.
 
 Run it beside `app.py` and expose it privately with Tailscale, as described
 at the top of the file. Set up this way, Artemisia fully replaces a hosted
