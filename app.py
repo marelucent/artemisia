@@ -81,6 +81,15 @@ def init_db(conn):
     );
     CREATE INDEX IF NOT EXISTS idx_entries_date ON entries(date);
     CREATE INDEX IF NOT EXISTS idx_entries_type ON entries(type);
+    CREATE TABLE IF NOT EXISTS journal (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        logged_at TEXT NOT NULL,     -- when the save happened (local time)
+        date  TEXT NOT NULL,         -- the day being logged
+        type  TEXT NOT NULL,
+        value TEXT NOT NULL,
+        action TEXT NOT NULL         -- 'added' or 'removed'
+    );
+    CREATE INDEX IF NOT EXISTS idx_journal_date ON journal(date);
     CREATE TABLE IF NOT EXISTS excluded_cycles (
         date TEXT PRIMARY KEY        -- cycle start dates excluded from stats
     );
@@ -426,6 +435,9 @@ def save_day(iso):
     date.fromisoformat(iso)  # validate
     data = request.get_json(force=True)
     conn = db()
+    before = set((r["type"], r["value"]) for r in conn.execute(
+        "SELECT type,value FROM entries WHERE date=? AND type IN (%s)"
+        % ",".join("?" * len(EDITABLE)), (iso, *EDITABLE)))
     conn.execute("DELETE FROM entries WHERE date=? AND type IN (%s)"
                  % ",".join("?" * len(EDITABLE)), (iso, *EDITABLE))
 
@@ -448,6 +460,16 @@ def save_day(iso):
     note = (data.get("note") or "").strip()
     if note:
         put("note", note[:2000])
+    after = set((r["type"], r["value"]) for r in conn.execute(
+        "SELECT type,value FROM entries WHERE date=? AND type IN (%s)"
+        % ",".join("?" * len(EDITABLE)), (iso, *EDITABLE)))
+    stamp = datetime.now().isoformat(timespec="seconds")
+    for t, v in sorted(after - before):
+        conn.execute("INSERT INTO journal(logged_at,date,type,value,action)"
+                     " VALUES(?,?,?,?,?)", (stamp, iso, t, v, "added"))
+    for t, v in sorted(before - after):
+        conn.execute("INSERT INTO journal(logged_at,date,type,value,action)"
+                     " VALUES(?,?,?,?,?)", (stamp, iso, t, v, "removed"))
     conn.commit()
     return jsonify({"ok": True})
 

@@ -81,7 +81,7 @@ textarea{width:100%;font:inherit;border:1px solid var(--border);border-radius:10
     <a class="btn" href="{{ url_for('calendar_view', year=prev[0], month=prev[1]) }}">‹</a>
     <a class="btn" href="{{ url_for('home') }}">today</a>
     <a class="btn" href="{{ url_for('calendar_view', year=next[0], month=next[1]) }}">›</a>
-    <a class="btn primary" href="#" onclick="openDay('{{ today }}');return false">＋ log today</a>
+    <a class="btn primary" href="#" onclick="openDay(localToday());return false">＋ log today</a>
   </div>
 </div>
 
@@ -210,6 +210,11 @@ async function openDay(iso) {
 }
 function closePanel() { document.getElementById('veil').classList.remove('open'); }
 
+function localToday() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
 async function saveDay() {
   const body = {
     flow: getChips('flow')[0] || null,
@@ -219,11 +224,16 @@ async function saveDay() {
     discharge: getChips('discharge')[0] || null,
     note: document.getElementById('p-note').value
   };
-  await fetch('/api/day/' + curDate, {method:'POST',
-    headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
-  location.replace(location.pathname);
+  try {
+    const r = await fetch('/api/day/' + curDate, {method:'POST',
+      headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)});
+    if (!r.ok) throw new Error('server said ' + r.status);
+    location.replace(location.pathname);
+  } catch (err) {
+    alert('Could not save this entry \u2014 the server seems unreachable (is Tailscale on?). Your entry is still on screen; try Save again once connected.');
+  }
 }
 
-if (new URLSearchParams(location.search).get('log') === 'today') openDay('{{ today }}');
+if (new URLSearchParams(location.search).get('log') === 'today') openDay(localToday());
 </script>
 {% endblock %}

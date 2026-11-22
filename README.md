@@ -147,3 +147,23 @@ advice; it's your own data, described carefully.
 ## Licence
 
 MIT — see [LICENSE](LICENSE). Take her, rename her, make her yours.
+
+
+## Letting Claude read it (optional)
+
+`artemisia_mcp.py` is a small read-only bridge that lets Claude (or any app that
+speaks MCP) ask Artemisia where you are in your cycle, what you've logged
+recently, your cycle history and how often each symptom or mood turns up.
+It opens the database read-only and has no writing tools: logging still
+happens in Artemisia herself.
+
+Run it beside `app.py` and expose it privately with Tailscale, as described
+at the top of the file. Set up this way, Artemisia fully replaces a hosted
+tracker such as Clue: you log on your phone, an assistant can read your
+cycle when you ask it to, and your data never leaves your own machine.
+
+A note from experience: the Claude apps reach custom connectors only over
+port 443 on a public address, so a tailnet-only URL works for local clients
+but not for claude.ai. If you want it there, put the bridge behind a gateway
+that checks a secret token (Tailscale Funnel on 443 is one way). Never
+expose it without one.
