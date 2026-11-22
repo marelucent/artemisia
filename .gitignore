@@ -2,3 +2,7 @@ artemisia.db
 _upload.json
 __pycache__/
 *.pyc
+ha.json
+nudges.json
+nudges_state.json
+*.tmp

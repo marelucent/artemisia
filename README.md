@@ -169,6 +169,30 @@ advice; it's your own data, described carefully.
 MIT — see [LICENSE](LICENSE). Take her, rename her, make her yours.
 
 
+## Nudges (optional)
+
+Gentle, cycle-aware reminders to log a moment, sent through
+[Home Assistant](https://www.home-assistant.io) to your phone: up to three a
+day while you bleed, twice a day for about ten days before your predicted
+start, and one every other evening the rest of the month. Never before 9:00
+or after 21:30, never if you've logged in the last three hours, and fewer if
+you've been ignoring them. Tap a nudge and a moment opens. Pause them for the
+day ("not today") or switch them off at `/nudges`.
+
+1. In Home Assistant, make a long-lived access token (your profile →
+   Security → Long-lived access tokens).
+2. Beside `artemisia.db`, create `ha.json` and keep it private (`chmod 600`;
+   it's already in `.gitignore`):
+   ```json
+   {"url": "http://homeassistant.local:8123", "token": "…",
+    "service": "notify/mobile_app_yourphone"}
+   ```
+3. Check it: `python3 nudges.py --test` (or `--dry` to see what it would do
+   right now without sending).
+4. Run it every 15 minutes, e.g. with cron:
+   `*/15 9-21 * * * cd /path/to/artemisia && ARTEMISIA_URL=https://your-artemisia-address python3 nudges.py`
+   (`ARTEMISIA_URL` is where tapping the nudge takes you.)
+
 ## Letting Claude read it (optional)
 
 `artemisia_mcp.py` is a small read-only bridge that lets Claude (or any app that

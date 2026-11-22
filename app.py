@@ -687,6 +687,60 @@ def edit_moment(mid):
     return jsonify({"ok": True, "id": mid})
 
 
+# ---------------------------------------------------------------- nudges page
+# nudges.py does the sending; this page only switches it on/off or pauses it.
+NUDGE_SETTINGS = os.path.join(os.path.dirname(DB_PATH), "nudges.json")
+NUDGE_PAGE = """{% extends "base.html" %}{% block content %}
+<h2 style="font-weight:500">Nudges</h2>
+<p>Gentle reminders to log a moment, shaped by your cycle: more while you bleed and
+in the run-up, now and then otherwise. Never before 9:00 or after 21:30, and never
+if you've logged in the last few hours.</p>
+<p><strong>{{ status }}</strong></p>
+<form method="post" style="display:flex;gap:.6rem;flex-wrap:wrap">
+{% if s.enabled %}
+  {% if paused %}<button class="btn" name="act" value="resume">resume today</button>
+  {% else %}<button class="btn primary" name="act" value="pause">not today</button>{% endif %}
+  <button class="btn" name="act" value="off">switch off</button>
+{% else %}<button class="btn primary" name="act" value="on">switch on</button>{% endif %}
+</form>
+<p class="muted" style="margin-top:1rem">Sending needs <code>nudges.py</code> running every
+15 minutes and a Home Assistant key in <code>ha.json</code>; see the README.</p>
+{% endblock %}"""
+
+
+def _nudge_settings():
+    try:
+        with open(NUDGE_SETTINGS) as f:
+            return dict({"enabled": True, "paused_until": ""}, **json.load(f))
+    except (OSError, ValueError):
+        return {"enabled": True, "paused_until": ""}
+
+
+@app.route("/nudges", methods=["GET", "POST"])
+def nudges_view():
+    from flask import render_template_string
+    s = _nudge_settings()
+    today = date.today().isoformat()
+    act = request.form.get("act") if request.method == "POST" else request.args.get("act")
+    if act in ("pause", "resume", "on", "off"):
+        if act == "pause":
+            s["paused_until"] = today
+        elif act == "resume":
+            s["paused_until"] = ""
+        else:
+            s["enabled"] = act == "on"
+        tmp = NUDGE_SETTINGS + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump(s, f)
+        os.replace(tmp, NUDGE_SETTINGS)
+        return redirect(url_for("nudges_view"))
+    paused = s.get("paused_until", "") >= today
+    status = ("Switched off." if not s.get("enabled", True)
+              else "Quiet for the rest of today." if paused else "On.")
+    return render_template_string(NUDGE_PAGE, s=s, paused=paused, status=status,
+                                  page="nudges")
+
+
 # ---------------------------------------------------------------- insights
 def esc(s):
     return str(s).replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
