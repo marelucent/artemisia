@@ -79,6 +79,9 @@ details.grp .chips{margin-top:.35rem}
 .tl .mo b{font-weight:500;color:var(--sage-deep);min-width:3rem}
 .tl button{margin-top:.5rem}
 .own{font-size:.85rem;margin:-.2rem 0 .6rem}
+.toolchips{display:flex;flex-wrap:wrap;gap:.4rem;margin-bottom:.4rem}
+.toolchips .chip{text-decoration:none;color:var(--faded);font-size:.85rem;background:transparent}
+.toolchips .chip.on{background:var(--sage);border-color:var(--sage);color:#fff}
 .ownrow{display:flex;justify-content:space-between;align-items:center;gap:.6rem;padding:.25rem 0;border-bottom:1px dotted var(--border)}
 .ownrow button{padding:.15rem .7rem;font-size:.8rem}
 @media (max-width:640px){
@@ -245,7 +248,7 @@ own averages — a compass, not a contraceptive.</p>
       </div></details>
     <div class="grp"><div class="t">Note</div>
       <textarea id="m-note" placeholder="anything the chips can't hold…"></textarea></div>
-    <div class="own"><a href="#" onclick="manageOwn();return false">tidy my own words</a> · <a href="/nudges?act=pause">quiet the nudges today</a> · <a href="/nudges">nudges</a><div id="m-own"></div></div>
+    <div class="own"><div class="toolchips"><a class="chip" href="#" onclick="manageOwn();return false">✎ tidy my own words</a><a class="chip" href="#" onclick="quietToday(this);return false">🌙 quiet the nudges today</a><a class="chip" href="/nudges">nudges</a></div><div id="m-own"></div></div>
     <div class="actions">
       <button id="m-del" onclick="deleteMoment()" style="margin-right:auto;display:none">delete</button>
       <button onclick="closeMoment()">cancel</button>
@@ -471,6 +474,14 @@ function renderMoments(ms) {
 }
 const LABELS = {mood: 'mood', symptom: 'body', pain_where: 'pain where', pain_kind: 'pain kind',
                 painkiller: 'painkiller', craving: 'craving', digestion: 'digestion'};
+async function quietToday(el) {
+  try {
+    const r = await fetch('/nudges?act=pause');
+    if (!r.ok) throw new Error(r.status);
+    el.textContent = '\u{1F319} quiet until tomorrow';
+    el.classList.add('on');
+  } catch (err) { alert('Could not reach the server to quiet the nudges.'); }
+}
 async function manageOwn() {
   const box = document.getElementById('m-own');
   if (box.dataset.open) { box.innerHTML = ''; box.dataset.open = ''; return; }
